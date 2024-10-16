@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "scrapy-crawler"
+version = "0.1.0"
+description = ""
+authors = ["Konstantin Grudnitskiy <k.grudnitskiy@yandex.ru>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+scrapy = "^2.11.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.black]
+line-length = 79
+target-version = ['py39']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+line_length = 79
