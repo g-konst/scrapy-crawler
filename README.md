@@ -103,6 +103,7 @@ Request(url, meta={"httpx": True})
 
 ## TODO
 
+ - [ ] - Proxy Middleware: Add proxy middleware to handle requests via proxies.
  - [ ] - Implement comprehensive unit tests for spiders, pipelines, and consumers.
  - [ ] - Add error handling to the AMQP pipeline to ensure message delivery failures are logged and retried.
  - [ ] - Optimize database queries in the pipeline, including bulk inserts and updates to reduce overhead.
