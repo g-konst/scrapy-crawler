@@ -1,3 +1,5 @@
+import os
+
 # Scrapy settings for crawlers project
 #
 # For simplicity, this file contains only settings considered important or
@@ -98,3 +100,7 @@ REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.7"
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 DUPEFILTER_CLASS = "scrapy.dupefilters.BaseDupeFilter"
 LOG_LEVEL = "INFO"
+
+RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost/")
+# TODO: mv to spider
+RABBITMQ_QUEUE = os.getenv("RABBITMQ_QUEUE", "scrapy_queue")

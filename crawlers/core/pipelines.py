@@ -24,10 +24,8 @@ class AMQPPipeline:
     @classmethod
     def from_crawler(cls, crawler):
         return cls(
-            rabbitmq_url=crawler.settings.get(
-                "RABBITMQ_URL", "amqp://guest:guest@localhost/"
-            ),
-            rabbitmq_queue=crawler.settings.get("RABBITMQ_QUEUE", "scrapy_queue"),
+            rabbitmq_url=crawler.settings.get("RABBITMQ_URL"),
+            rabbitmq_queue=crawler.settings.get("RABBITMQ_QUEUE"),
         )
 
     def open_spider(self, spider):
