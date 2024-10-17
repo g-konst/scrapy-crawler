@@ -10,7 +10,7 @@ from crawlers.core.items import AprilItem
 class AprilSpider(BaseSpider):
     custom_settings = {
         "RETRY_TIMES": 5,
-        "DOWNLOAD_TIMEOUT": 180,
+        "DOWNLOAD_TIMEOUT": 30,
         "COMPRESSION_ENABLED": False,
         "DEFAULT_REQUEST_HEADERS": {
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:131.0) Gecko/20100101 Firefox/131.0",
