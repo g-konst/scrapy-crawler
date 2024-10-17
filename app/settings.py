@@ -1,6 +1,6 @@
 import os
 
-# Scrapy settings for crawlers project
+# Scrapy settings for scrapy-crawler project
 #
 # For simplicity, this file contains only settings considered important or
 # commonly used. You can find more settings consulting the documentation:
@@ -9,10 +9,10 @@ import os
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
-BOT_NAME = "crawlers"
+BOT_NAME = "crawler"
 
-SPIDER_MODULES = ["crawlers.spiders.apteka"]
-NEWSPIDER_MODULE = "crawlers.spiders"
+SPIDER_MODULES = ["app.spiders.apteka"]
+NEWSPIDER_MODULE = "app.spiders"
 
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
@@ -50,16 +50,16 @@ TELNETCONSOLE_ENABLED = False
 # Enable or disable spider middlewares
 # See https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 # SPIDER_MIDDLEWARES = {
-#    "crawlers.middlewares.CrawlersSpiderMiddleware": 543,
+#    "app.middlewares.CrawlersSpiderMiddleware": 543,
 # }
 
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
-    "crawlers.core.middlewares.CheckResponseMiddleware": 300,
-    "crawlers.core.middlewares.HttpxDownloaderMiddleware": 543,
+    "app.core.middlewares.CheckResponseMiddleware": 300,
+    "app.core.middlewares.HttpxDownloaderMiddleware": 543,
     "scrapy.downloadermiddlewares.retry.RetryMiddleware": None,
-    #    "crawlers.middlewares.CrawlersDownloaderMiddleware": 543,
+    #    "app.middlewares.CrawlersDownloaderMiddleware": 543,
 }
 
 # Enable or disable extensions
@@ -71,7 +71,7 @@ DOWNLOADER_MIDDLEWARES = {
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    "crawlers.core.pipelines.AMQPPipeline": 300,
+    "app.core.pipelines.AMQPPipeline": 300,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
@@ -104,3 +104,7 @@ LOG_LEVEL = "INFO"
 RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost/")
 # TODO: mv to spider
 RABBITMQ_QUEUE = os.getenv("RABBITMQ_QUEUE", "scrapy_queue")
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql+asyncpg://crawler:crawler@localhost:5433/crawler?async_fallback=True",
+)

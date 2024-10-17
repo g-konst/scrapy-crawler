@@ -3,12 +3,18 @@ import asyncio
 from faststream.rabbit import RabbitBroker, RabbitQueue
 from twisted.internet import defer, task
 
+from app.core.items import BaseItem
+from app.core.spiders import BaseSpider
+
 
 broker = RabbitBroker()
 
 
+__all__ = ["AMQPPipeline"]
+
+
 class AMQPPipeline:
-    def __init__(self, rabbitmq_url, rabbitmq_queue):
+    def __init__(self, rabbitmq_url: str, rabbitmq_queue: str):
         self.rabbitmq_queue = rabbitmq_queue
         self.rabbitmq_url = rabbitmq_url
 
@@ -28,7 +34,7 @@ class AMQPPipeline:
             rabbitmq_queue=crawler.settings.get("RABBITMQ_QUEUE"),
         )
 
-    def open_spider(self, spider):
+    def open_spider(self, spider: BaseSpider):
         defer.Deferred.fromFuture(
             self.loop.create_task(self._connect_to_broker())
         ).addCallback(
@@ -42,7 +48,7 @@ class AMQPPipeline:
         await broker.connect()
         await broker.declare_queue(RabbitQueue(self.rabbitmq_queue))
 
-    def publish_items(self, spider):
+    def publish_items(self, spider: BaseSpider):
         if not self.items_queue.empty():
             item = self.items_queue.get_nowait()
             return (
@@ -50,13 +56,13 @@ class AMQPPipeline:
                     self.loop.create_task(broker.publish(item, self.rabbitmq_queue))
                 )
                 .addCallback(
-                    lambda _: spider.logger.debug(f"Published item: {item.id}")
+                    lambda _: spider.logger.debug(f"Published item: {item['id']}")
                 )
                 .addCallback(lambda _: self.items_queue.task_done())
                 .addCallback(self.inc)
             )
 
-    def close_spider(self, spider):
+    def close_spider(self, spider: BaseSpider):
         spider.logger.info("Send messages and close spider")
         return (
             defer.Deferred.fromFuture(self.loop.create_task(self.items_queue.join()))
@@ -70,5 +76,7 @@ class AMQPPipeline:
             )
         )
 
-    def process_item(self, item, spider):
-        self.items_queue.put_nowait(item)
+    def process_item(self, item: BaseItem, spider: BaseSpider):
+        new_item = item.model_dump()
+        new_item["_table_name"] = spider._table_name
+        self.items_queue.put_nowait(new_item)

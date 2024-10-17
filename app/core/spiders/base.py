@@ -5,10 +5,13 @@ from scrapy import Spider
 from scrapy.http import Request, Response
 
 
+__all__ = ["BaseSpider"]
+
+
 class SpiderNameMixin:
     @classmethod
     def _spidermodule(cls):
-        return ".".join(cls.__module__.split(".")[2:])
+        return ".".join(cls.__module__.split(".")[2:-1])
 
     @property
     def spidernamehead(self):
@@ -16,12 +19,16 @@ class SpiderNameMixin:
 
 
 class MetaSpider(type):
+    _suffix = None
+
     def __init__(cls, clsname, superclasses, attributedict):
-        if not attributedict["__module__"].startswith("crawlers.core.spiders"):
-            cls.name = "_".join(filter(bool, (cls._spidermodule(),)))
+        if not attributedict["__module__"].startswith("app.core.spiders"):
+            cls.name = "_".join(filter(bool, (cls._spidermodule(), cls._suffix)))
 
 
 class BaseSpider(SpiderNameMixin, Spider, metaclass=MetaSpider):
+    _table_name = None
+
     def __init__(
         self, url: Optional[str] = None, params: Optional[dict] = None, *args, **kwargs
     ) -> None:

@@ -3,11 +3,14 @@ from typing import Iterable
 
 from scrapy.http import Request, Response
 
-from crawlers.core.spiders import BaseSpider
-from crawlers.core.items import AprilItem
+from app.core.spiders import BaseSpider
+
+from .items import AprilItem
 
 
 class AprilSpider(BaseSpider):
+    _table_name = "april"
+
     custom_settings = {
         "RETRY_TIMES": 5,
         "DOWNLOAD_TIMEOUT": 30,
@@ -21,7 +24,7 @@ class AprilSpider(BaseSpider):
         },
     }
 
-    step = 100  # items per page
+    step = 500  # items per page
     count_url = (
         "https://web-api.apteka-april.ru/catalog"
         "/ID@products?cityID={0}&isAvailable=true"
@@ -53,6 +56,7 @@ class AprilSpider(BaseSpider):
 
     def parse(self, response: Response):
         expected = len(json.loads(response.body))
+        city_id = response.meta["city_id"]
         self.logger.info(f"Expected: {expected}")
         if expected > 0:
             for start in range(0, expected + 1, self.step):
@@ -63,11 +67,12 @@ class AprilSpider(BaseSpider):
                         ipp=self.step,
                     ),
                     callback=self.parse_items,
-                    meta={"httpx": True},
+                    meta={"httpx": True, "city_id": city_id},
                 )
 
     def parse_items(self, response: Response):
         data = json.loads(response.body)
+        city_id = response.meta["city_id"]
         for item_data in data:
             properties = self.get_props(item_data.get("properties", []))
             yield AprilItem(
@@ -75,6 +80,7 @@ class AprilSpider(BaseSpider):
                 name=item_data["name"],
                 price=item_data["price"].get("withoutCard"),
                 special_price=item_data["price"].get("withCard"),
+                city_id=city_id,
                 **{
                     self.PROP_MAP[type_id]: name
                     for type_id, name in properties.items()
