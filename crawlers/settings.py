@@ -9,7 +9,7 @@
 
 BOT_NAME = "crawlers"
 
-SPIDER_MODULES = ["crawlers.spiders"]
+SPIDER_MODULES = ["crawlers.spiders.apteka"]
 NEWSPIDER_MODULE = "crawlers.spiders"
 
 
@@ -17,10 +17,13 @@ NEWSPIDER_MODULE = "crawlers.spiders"
 USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:131.0) Gecko/20100101 Firefox/131.0"
 
 # Obey robots.txt rules
-ROBOTSTXT_OBEY = True
-
+# ROBOTSTXT_OBEY = True
+# METAREFRESH_ENABLED = False
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
-# CONCURRENT_REQUESTS = 32
+CONCURRENT_REQUESTS = 1
+# DOWNLOADER_CLIENTCONTEXTFACTORY = (
+#     "scrapy.core.downloader.contextfactory.BrowserLikeContextFactory"
+# )
 
 # Configure a delay for requests for the same website (default: 0)
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
@@ -34,7 +37,7 @@ ROBOTSTXT_OBEY = True
 # COOKIES_ENABLED = False
 
 # Disable Telnet Console (enabled by default)
-# TELNETCONSOLE_ENABLED = False
+TELNETCONSOLE_ENABLED = False
 
 # Override the default request headers:
 # DEFAULT_REQUEST_HEADERS = {
@@ -50,9 +53,12 @@ ROBOTSTXT_OBEY = True
 
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
-# DOWNLOADER_MIDDLEWARES = {
-#    "crawlers.middlewares.CrawlersDownloaderMiddleware": 543,
-# }
+DOWNLOADER_MIDDLEWARES = {
+    "crawlers.core.middlewares.CheckResponseMiddleware": 300,
+    "crawlers.core.middlewares.HttpxDownloaderMiddleware": 543,
+    "scrapy.downloadermiddlewares.retry.RetryMiddleware": None,
+    #    "crawlers.middlewares.CrawlersDownloaderMiddleware": 543,
+}
 
 # Enable or disable extensions
 # See https://docs.scrapy.org/en/latest/topics/extensions.html
@@ -90,4 +96,5 @@ ROBOTSTXT_OBEY = True
 # Set settings whose default value is deprecated to a future-proof value
 REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.7"
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
-FEED_EXPORT_ENCODING = "utf-8"
+DUPEFILTER_CLASS = "scrapy.dupefilters.BaseDupeFilter"
+LOG_LEVEL = "INFO"

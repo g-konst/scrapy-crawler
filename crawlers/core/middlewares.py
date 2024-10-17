@@ -1,103 +1,102 @@
-# Define here the models for your spider middleware
-#
-# See documentation in:
-# https://docs.scrapy.org/en/latest/topics/spider-middleware.html
-
+import httpx
 from scrapy import signals
+from scrapy.http import Request as ScrapyRequest, Response as ScrapyResponse
+from scrapy.settings import Settings
+from scrapy.crawler import Crawler
+from scrapy.exceptions import IgnoreRequest
 
-# useful for handling different item types with a single interface
-from itemadapter import is_item, ItemAdapter
+from crawlers.core.spiders import BaseSpider
 
 
-class CrawlersSpiderMiddleware:
-    # Not all methods need to be defined. If a method is not defined,
-    # scrapy acts as if the spider middleware does not modify the
-    # passed objects.
-
+class HttpxDownloaderMiddleware:
     @classmethod
     def from_crawler(cls, crawler):
-        # This method is used by Scrapy to create your spiders.
-        s = cls()
-        crawler.signals.connect(s.spider_opened, signal=signals.spider_opened)
+        s = cls(crawler.settings)
+        crawler.signals.connect(s.spider_closed, signal=signals.spider_closed)
         return s
 
-    def process_spider_input(self, response, spider):
-        # Called for each response that goes through the spider
-        # middleware and into the spider.
+    def __init__(self, settings):
+        self.client = httpx.AsyncClient()
+        self.request_timeout = settings.get("DOWNLOAD_TIMEOUT", 30)
 
-        # Should return None or raise an exception.
-        return None
+    async def spider_closed(self, spider: BaseSpider):
+        spider.logger.info("Closing httpx client")
+        await self.client.aclose()
 
-    def process_spider_output(self, response, result, spider):
-        # Called with the results returned from the Spider, after
-        # it has processed the response.
+    async def process_request(self, request: ScrapyRequest, spider: BaseSpider):
+        if request.meta.get("httpx") == True:
+            spider.logger.info(f"Fetching {request.url} using httpx")
+            response = await self.client.send(request=self._to_httpx_request(request))
 
-        # Must return an iterable of Request, or item objects.
-        for i in result:
-            yield i
+            if response.is_error:
+                spider.logger.error(
+                    f"Error fetching {request.url}: {response.status_code}"
+                )
+                raise httpx.RequestError(f"Bad response: {response.status_code}")
 
-    def process_spider_exception(self, response, exception, spider):
-        # Called when a spider or process_spider_input() method
-        # (from other spider middleware) raises an exception.
+            return self._to_scrapy_response(response, request)
 
-        # Should return either None or an iterable of Request or item objects.
-        pass
+    def _parse_headers(self, headers: dict) -> dict:
+        return {k: v[0] if isinstance(v, list) else v for k, v in headers.items()}
 
-    def process_start_requests(self, start_requests, spider):
-        # Called with the start requests of the spider, and works
-        # similarly to the process_spider_output() method, except
-        # that it doesn’t have a response associated.
+    def _to_httpx_request(self, request: ScrapyRequest) -> httpx.Request:
+        return self.client.build_request(
+            method=request.method,
+            url=request.url,
+            data=request.body,
+            headers=self._parse_headers(request.headers),
+            cookies=request.cookies,
+            timeout=self.request_timeout,
+        )
 
-        # Must return only requests (not items).
-        for r in start_requests:
-            yield r
+    def _to_scrapy_response(
+        self, response: httpx.Response, request: ScrapyRequest
+    ) -> ScrapyResponse:
+        return ScrapyResponse(
+            url=str(response.url),
+            status=response.status_code,
+            headers=dict(response.headers),
+            body=response.content,
+            request=request,
+        )
 
-    def spider_opened(self, spider):
-        spider.logger.info("Spider opened: %s" % spider.name)
 
-
-class CrawlersDownloaderMiddleware:
-    # Not all methods need to be defined. If a method is not defined,
-    # scrapy acts as if the downloader middleware does not modify the
-    # passed objects.
-
+class CheckResponseMiddleware:
     @classmethod
-    def from_crawler(cls, crawler):
-        # This method is used by Scrapy to create your spiders.
-        s = cls()
-        crawler.signals.connect(s.spider_opened, signal=signals.spider_opened)
-        return s
+    def from_crawler(cls, crawler: Crawler):
+        return cls(crawler.settings)
 
-    def process_request(self, request, spider):
-        # Called for each request that goes through the downloader
-        # middleware.
+    def __init__(self, settings: Settings) -> None:
+        self.max_retries = settings.get("RETRY_TIMES", 0)
 
-        # Must either:
-        # - return None: continue processing this request
-        # - or return a Response object
-        # - or return a Request object
-        # - or raise IgnoreRequest: process_exception() methods of
-        #   installed downloader middleware will be called
-        return None
+    def retry(
+        self, request: ScrapyRequest, spider: BaseSpider, reason: str
+    ) -> ScrapyRequest:
+        retry_times = request.meta.get("retry_times", 0) + 1
+        spider.logger.info(f"{spider.name} retry {retry_times} for {repr(reason)}")
+        if retry_times >= self.max_retries:
+            spider.logger.error(f"{spider.name} to many retries")
+            raise IgnoreRequest()
 
-    def process_response(self, request, response, spider):
-        # Called with the response returned from the downloader.
+        request.meta["retry_times"] = retry_times
+        return request
 
-        # Must either;
-        # - return a Response object
-        # - return a Request object
-        # - or raise IgnoreRequest
+    def process_response(
+        self, request: ScrapyRequest, response: ScrapyResponse, spider: BaseSpider
+    ) -> ScrapyResponse:
+        ok, err = spider.is_valid_response(request, response)
+        if not ok:
+            return self.retry(request, spider, err)
+
         return response
 
-    def process_exception(self, request, exception, spider):
-        # Called when a download handler or a process_request()
-        # (from other downloader middleware) raises an exception.
+    def process_exception(
+        self, request: ScrapyRequest, exception: Exception, spider: BaseSpider
+    ):
+        if isinstance(exception, IgnoreRequest):
+            return
 
-        # Must either:
-        # - return None: continue processing this exception
-        # - return a Response object: stops process_exception() chain
-        # - return a Request object: stops process_exception() chain
-        pass
+        if isinstance(exception, httpx.ReadTimeout):
+            return self.retry(request, spider, "retry timeout")
 
-    def spider_opened(self, spider):
-        spider.logger.info("Spider opened: %s" % spider.name)
+        self.retry(request, spider, repr(exception))

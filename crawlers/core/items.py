@@ -1,12 +1,10 @@
-# Define here the models for your scraped items
-#
-# See documentation in:
-# https://docs.scrapy.org/en/latest/topics/items.html
-
-import scrapy
+from pydantic import BaseModel
 
 
-class CrawlersItem(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
-    pass
+class AprilItem(BaseModel):
+    id: int
+    name: str
+    price: int
+    special_price: int | None
+    manufacturer: str
+    country: str
