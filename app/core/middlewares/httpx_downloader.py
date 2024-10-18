@@ -7,6 +7,7 @@ from app.core.spiders import BaseSpider
 
 __all__ = ["HttpxDownloaderMiddleware"]
 
+
 class HttpxDownloaderMiddleware:
     @classmethod
     def from_crawler(cls, crawler):
@@ -23,7 +24,7 @@ class HttpxDownloaderMiddleware:
         await self.client.aclose()
 
     async def process_request(self, request: ScrapyRequest, spider: BaseSpider):
-        if request.meta.get("httpx") == True:
+        if getattr(spider, "httpx", None) or request.meta.get("httpx") == True:
             spider.logger.info(f"Fetching {request.url} using httpx")
             response = await self.client.send(request=self._to_httpx_request(request))
 

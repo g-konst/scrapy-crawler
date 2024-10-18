@@ -77,6 +77,9 @@ class AMQPPipeline:
         )
 
     def process_item(self, item: BaseItem, spider: BaseSpider):
-        new_item = item.model_dump()
-        new_item["_table_name"] = spider._table_name
-        self.items_queue.put_nowait(new_item)
+        if getattr(spider, "_table_name", None):
+            new_item = item.model_dump()
+            new_item["_table_name"] = spider._table_name
+            self.items_queue.put_nowait(new_item)
+        else:
+            return item

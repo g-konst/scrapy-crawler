@@ -1,16 +1,17 @@
 import json
 from typing import Iterable
+import pathlib
 
 from scrapy.http import Request, Response
 
 from app.core.spiders import BaseSpider
 
-from .items import AprilItem
+from .items import AprilItem, AprilCityItem
 
 
 class AprilSpider(BaseSpider):
     _table_name = "april"
-
+    httpx = True
     custom_settings = {
         "RETRY_TIMES": 5,
         "DOWNLOAD_TIMEOUT": 30,
@@ -51,7 +52,7 @@ class AprilSpider(BaseSpider):
         for city_id in self.params.get("city_ids", []):
             yield Request(
                 self.count_url.format(city_id),
-                meta={"city_id": city_id, "httpx": True},
+                meta={"city_id": city_id},
             )
 
     def parse(self, response: Response):
@@ -67,7 +68,7 @@ class AprilSpider(BaseSpider):
                         ipp=self.step,
                     ),
                     callback=self.parse_items,
-                    meta={"httpx": True, "city_id": city_id},
+                    meta={"city_id": city_id},
                 )
 
     def parse_items(self, response: Response):
@@ -93,3 +94,54 @@ class AprilSpider(BaseSpider):
         for p in properties:
             props[p["typeID"]] = p["name"]
         return props
+
+
+class AprilCitiesSpider(BaseSpider):
+    _suffix = "cities"
+    custom_settings = {
+        "RETRY_TIMES": 5,
+        "DOWNLOAD_TIMEOUT": 30,
+        "COMPRESSION_ENABLED": False,
+        "ITEM_PIPELINES": {},
+        "DEFAULT_REQUEST_HEADERS": {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:131.0) Gecko/20100101 Firefox/131.0",
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Encoding": "gzip, deflate, br, zstd",
+            "X-Requested-With": "XMLHTTPRequest",
+            "Referer": "https://apteka-april.ru/",
+        },
+        "FEEDS": {
+            pathlib.Path(__file__).parent.resolve()
+            / "cities.json": {
+                "format": "json",
+                "encoding": "utf8",
+                "store_empty": False,
+                "fields": None,
+                "indent": 4,
+                "item_export_kwargs": {
+                    "export_empty_fields": True,
+                },
+            },
+        },
+    }
+
+    start_urls = ["https://web-api.apteka-april.ru/gis/cities?hasPharmacies=true"]
+    httpx = True
+
+    def is_valid_response(
+        self, request: Request, response: Response
+    ) -> tuple[bool, str]:
+        try:
+            return bool(json.loads(response.body)), "empty data"
+        except Exception as e:
+            return False, str(e)
+
+    def parse(self, response: Response):
+        for data in filter(
+            lambda x: x.get("isCity") == True,
+            json.loads(response.body),
+        ):
+            yield AprilCityItem(
+                id=data["ID"],
+                name=data["name"],
+            ).model_dump()

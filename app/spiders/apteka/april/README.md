@@ -18,5 +18,11 @@ $ docker-compose up
 This spider required `city_ids` list as input parameter
 
 ```bash
-$ scrapy crawl apteka.april -a params='{"city_ids": [1, 4]}'
+$ scrapy crawl apteka.april -a params='{"city_ids": [3, 4, 41]}'
+```
+
+To get list of cities run
+
+```bash
+$ scrapy crawl apteka.april_cities
 ```
