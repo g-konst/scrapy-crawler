@@ -1,6 +1,6 @@
 services:
 
-  consumer:
+  consumer: &app
     build: .
     depends_on:
       rmq:
@@ -13,6 +13,11 @@ services:
       - DATABASE_URL=postgresql+asyncpg://crawler:crawler@db/crawler?async_fallback=True
     entrypoint: |
       faststream run app.consumer:app
+
+  crawler:
+    <<: *app
+    entrypoint: |
+      faststream run app.crawler:c.app
 
   rmq:
     image: rabbitmq:management-alpine
