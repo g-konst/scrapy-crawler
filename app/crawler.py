@@ -61,7 +61,7 @@ class Crawler:
 
 c = Crawler(
     broker_url=settings.RABBITMQ_URL,
-    proc=1,  # TODO: move to settings
+    proc=12,  # TODO: move to settings
 )
 
 
@@ -91,5 +91,7 @@ if __name__ == "__main__":
 
         log.startLogging(sys.stdout)
 
-        twisted_reactor.callWhenRunning(lambda: asyncio.ensure_future(c.app.run()))
+        twisted_reactor.callWhenRunning(
+            lambda: asyncio.ensure_future(c.app.run())
+        )
         twisted_reactor.run()
