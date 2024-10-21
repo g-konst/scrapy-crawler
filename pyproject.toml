@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "scrapy-crawler"
+name = "scrapy_crawler"
 version = "0.1.0"
 description = ""
 authors = ["Konstantin Grudnitskiy <k.grudnitskiy@yandex.ru>"]
