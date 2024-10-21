@@ -48,6 +48,7 @@ TELNETCONSOLE_ENABLED = False
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
     "app.core.middlewares.CheckResponseMiddleware": 300,
+    # "app.core.middlewares.ProxyMiddleware": 400,  # TODO: uncomment on proxy service added
     "app.core.middlewares.HttpxDownloaderMiddleware": 543,
     "scrapy.downloadermiddlewares.retry.RetryMiddleware": None,
     # "app.middlewares.CrawlersDownloaderMiddleware": 543,

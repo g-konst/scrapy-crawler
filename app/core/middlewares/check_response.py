@@ -22,16 +22,22 @@ class CheckResponseMiddleware:
         self, request: ScrapyRequest, spider: BaseSpider, reason: str
     ) -> ScrapyRequest:
         retry_times = request.meta.get("retry_times", 0) + 1
-        spider.logger.info(f"{spider.name} retry {retry_times} for {repr(reason)}")
+        spider.logger.info(
+            f"{spider.name} retry {retry_times} for {repr(reason)}"
+        )
         if retry_times >= self.max_retries:
             spider.logger.error(f"{spider.name} to many retries")
             raise IgnoreRequest()
 
+        request.meta["renew_proxy"] = True
         request.meta["retry_times"] = retry_times
         return request
 
-    def process_response(
-        self, request: ScrapyRequest, response: ScrapyResponse, spider: BaseSpider
+    async def process_response(
+        self,
+        request: ScrapyRequest,
+        response: ScrapyResponse,
+        spider: BaseSpider,
     ) -> ScrapyResponse:
         ok, err = spider.is_valid_response(request, response)
         if not ok:
@@ -39,7 +45,7 @@ class CheckResponseMiddleware:
 
         return response
 
-    def process_exception(
+    async def process_exception(
         self, request: ScrapyRequest, exception: Exception, spider: BaseSpider
     ):
         if isinstance(exception, IgnoreRequest):
