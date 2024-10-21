@@ -8,12 +8,9 @@ import os
 #     https://docs.scrapy.org/en/latest/topics/settings.html
 #     https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://docs.scrapy.org/en/latest/topics/spider-middleware.html
-
 BOT_NAME = "crawler"
-
 SPIDER_MODULES = ["app.spiders.apteka"]
 NEWSPIDER_MODULE = "app.spiders"
-
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:131.0) Gecko/20100101 Firefox/131.0"
@@ -23,9 +20,9 @@ USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:131.0) Gecko/2010
 # METAREFRESH_ENABLED = False
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 CONCURRENT_REQUESTS = 1
-# DOWNLOADER_CLIENTCONTEXTFACTORY = (
-#     "scrapy.core.downloader.contextfactory.BrowserLikeContextFactory"
-# )
+DOWNLOADER_CLIENTCONTEXTFACTORY = (
+    "scrapy.core.downloader.contextfactory.BrowserLikeContextFactory"
+)
 
 # Configure a delay for requests for the same website (default: 0)
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
@@ -41,12 +38,6 @@ CONCURRENT_REQUESTS = 1
 # Disable Telnet Console (enabled by default)
 TELNETCONSOLE_ENABLED = False
 
-# Override the default request headers:
-# DEFAULT_REQUEST_HEADERS = {
-#    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-#    "Accept-Language": "en",
-# }
-
 # Enable or disable spider middlewares
 # See https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 # SPIDER_MIDDLEWARES = {
@@ -59,14 +50,14 @@ DOWNLOADER_MIDDLEWARES = {
     "app.core.middlewares.CheckResponseMiddleware": 300,
     "app.core.middlewares.HttpxDownloaderMiddleware": 543,
     "scrapy.downloadermiddlewares.retry.RetryMiddleware": None,
-    #    "app.middlewares.CrawlersDownloaderMiddleware": 543,
+    # "app.middlewares.CrawlersDownloaderMiddleware": 543,
 }
 
 # Enable or disable extensions
 # See https://docs.scrapy.org/en/latest/topics/extensions.html
-# EXTENSIONS = {
-#    "scrapy.extensions.telnet.TelnetConsole": None,
-# }
+EXTENSIONS = {
+    "scrapy.extensions.telnet.TelnetConsole": None,
+}
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
@@ -104,6 +95,7 @@ LOG_LEVEL = "INFO"
 RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost/")
 # TODO: mv to spider
 RABBITMQ_QUEUE = os.getenv("RABBITMQ_QUEUE", "scrapy_queue")
+CRAWLER_START_QUEUE = os.getenv("CRAWLER_START_QUEUE", "start_spider")
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql+asyncpg://crawler:crawler@localhost:5433/crawler?async_fallback=True",

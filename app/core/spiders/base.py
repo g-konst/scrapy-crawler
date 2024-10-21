@@ -1,11 +1,17 @@
+from abc import abstractmethod, ABC, ABCMeta
 import json
-from typing import Optional
+from typing import Iterable, Optional
 
 from scrapy import Spider
 from scrapy.http import Request, Response
 
+from app.core.items import StartItem
 
-__all__ = ["BaseSpider"]
+
+__all__ = [
+    "BaseSpider",
+    "BaseStartSpider",
+]
 
 
 class SpiderNameMixin:
@@ -44,3 +50,14 @@ class BaseSpider(SpiderNameMixin, Spider, metaclass=MetaSpider):
         self, request: Request, response: Response
     ) -> tuple[bool, str]:
         return True, None
+
+
+class MetaCombineSpider(MetaSpider, ABCMeta): ...
+
+
+class BaseStartSpider(BaseSpider, metaclass=MetaCombineSpider):
+    _suffix = "start"
+
+    @abstractmethod
+    def start(self) -> Iterable[StartItem]:
+        raise NotImplementedError()
