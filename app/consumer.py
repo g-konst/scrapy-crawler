@@ -1,5 +1,5 @@
 from faststream import FastStream, Depends
-from faststream.rabbit import RabbitBroker
+from faststream.rabbit import RabbitBroker, RabbitMessage
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,11 +14,17 @@ app = FastStream(broker=broker)
 
 
 @broker.subscriber(settings.RABBITMQ_QUEUE)
-async def handle(message: dict, db: AsyncSession = Depends(get_session)):
+async def handle(
+    message: dict, msg: RabbitMessage, db: AsyncSession = Depends(get_session)
+):
     table_name = message.pop("_table_name", None)
-    assert table_name is not None
-
     item_id = message.get("id", None)
-    assert item_id is not None
+    if not table_name or not item_id:
+        await msg.reject()
+        return
 
-    await upsert_data(db, table_name, message, "id")
+    try:
+        await upsert_data(db, table_name, message, "id")
+        await msg.ack()
+    except Exception as e:
+        await msg.nack()

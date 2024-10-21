@@ -1,11 +1,20 @@
 import datetime as dt
 
-from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    async_sessionmaker,
+    AsyncSession,
+    create_async_engine,
+)
 from sqlalchemy import select, update, insert, MetaData, Table
 
 from app.settings import DATABASE_URL
 
-engine = create_async_engine(DATABASE_URL)
+engine = create_async_engine(
+    DATABASE_URL,
+    pool_size=24,
+    max_overflow=32,
+    pool_timeout=30,
+)
 async_session = async_sessionmaker(
     bind=engine,
     expire_on_commit=False,
@@ -13,7 +22,7 @@ async_session = async_sessionmaker(
 
 
 # Dependency
-async def get_session() -> AsyncSession:
+async def get_session():
     async with async_session() as session:
         yield session
 
@@ -32,7 +41,9 @@ async def upsert_data(
 
         table = await conn.run_sync(get_table)
 
-        query = select(table).where(table.c[unique_field] == data[unique_field])
+        query = select(table).where(
+            table.c[unique_field] == data[unique_field]
+        )
         result = await session.execute(query)
         existing_record = result.fetchone()
 
@@ -45,6 +56,8 @@ async def upsert_data(
             )
         else:
             await session.execute(
-                insert(table).values(**data, updated=cur_date, created=cur_date)
+                insert(table).values(
+                    **data, updated=cur_date, created=cur_date
+                )
             )
         await session.commit()
