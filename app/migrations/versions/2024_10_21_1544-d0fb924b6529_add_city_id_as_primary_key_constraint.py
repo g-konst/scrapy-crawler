@@ -1,8 +1,8 @@
-"""initial
+"""add city_id as primary key constraint
 
-Revision ID: b5649d3099ae
+Revision ID: d0fb924b6529
 Revises:
-Create Date: 2024-10-17 16:01:30.984921
+Create Date: 2024-10-21 15:44:18.716156
 
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "b5649d3099ae"
+revision: str = "d0fb924b6529"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -24,6 +24,7 @@ def upgrade() -> None:
     op.create_table(
         "april",
         sa.Column("special_price", sa.Integer(), nullable=True),
+        sa.Column("city_id", sa.Integer(), nullable=False),
         sa.Column("name", sa.String(), nullable=False),
         sa.Column("price", sa.Integer(), nullable=False),
         sa.Column("manufacturer", sa.String(), nullable=False),
@@ -31,7 +32,7 @@ def upgrade() -> None:
         sa.Column("created", sa.DateTime(), nullable=False),
         sa.Column("updated", sa.DateTime(), nullable=False),
         sa.Column("id", sa.Integer(), nullable=False),
-        sa.PrimaryKeyConstraint("id"),
+        sa.PrimaryKeyConstraint("id", "city_id", name="idx_april_pk"),
     )
     # ### end Alembic commands ###
 
