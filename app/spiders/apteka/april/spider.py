@@ -1,29 +1,17 @@
 import json
 from typing import Iterable
-import pathlib
 
 from scrapy.http import Request, Response
 
 from app.core.spiders import BaseSpider
+from app.core.items import StartItem
 
-from .items import AprilItem, AprilCityItem
+from .items import AprilItem
+from .utils import AprilMixin
 
 
-class AprilSpider(BaseSpider):
+class AprilSpider(AprilMixin, BaseSpider):
     _table_name = "april"
-    httpx = True
-    custom_settings = {
-        "RETRY_TIMES": 5,
-        "DOWNLOAD_TIMEOUT": 30,
-        "COMPRESSION_ENABLED": False,
-        "DEFAULT_REQUEST_HEADERS": {
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:131.0) Gecko/20100101 Firefox/131.0",
-            "Accept": "application/json, text/plain, */*",
-            "Accept-Encoding": "gzip, deflate, br, zstd",
-            "X-Requested-With": "XMLHTTPRequest",
-            "Referer": "https://apteka-april.ru/",
-        },
-    }
 
     step = 500  # items per page
     count_url = (
@@ -38,15 +26,6 @@ class AprilSpider(BaseSpider):
 
     # typeID: property
     PROP_MAP = {13: "manufacturer", 15: "country"}
-
-    def is_valid_response(self, request: Request, response: Response) -> bool:
-        try:
-            data = json.loads(response.body)
-            return bool(data), "empty data"
-        except json.JSONDecodeError:
-            return False, "json decode error"
-        except Exception as e:
-            return False, str(e)
 
     def start_requests(self) -> Iterable[Request]:
         for city_id in self.params.get("city_ids", []):
@@ -96,52 +75,19 @@ class AprilSpider(BaseSpider):
         return props
 
 
-class AprilCitiesSpider(BaseSpider):
+class AprilCitiesSpider(AprilMixin, BaseSpider):
     _suffix = "cities"
-    custom_settings = {
-        "RETRY_TIMES": 5,
-        "DOWNLOAD_TIMEOUT": 30,
-        "COMPRESSION_ENABLED": False,
-        "ITEM_PIPELINES": {},
-        "DEFAULT_REQUEST_HEADERS": {
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:131.0) Gecko/20100101 Firefox/131.0",
-            "Accept": "application/json, text/plain, */*",
-            "Accept-Encoding": "gzip, deflate, br, zstd",
-            "X-Requested-With": "XMLHTTPRequest",
-            "Referer": "https://apteka-april.ru/",
-        },
-        "FEEDS": {
-            pathlib.Path(__file__).parent.resolve()
-            / "cities.json": {
-                "format": "json",
-                "encoding": "utf8",
-                "store_empty": False,
-                "fields": None,
-                "indent": 4,
-                "item_export_kwargs": {
-                    "export_empty_fields": True,
-                },
-            },
-        },
-    }
-
     start_urls = ["https://web-api.apteka-april.ru/gis/cities?hasPharmacies=true"]
-    httpx = True
-
-    def is_valid_response(
-        self, request: Request, response: Response
-    ) -> tuple[bool, str]:
-        try:
-            return bool(json.loads(response.body)), "empty data"
-        except Exception as e:
-            return False, str(e)
 
     def parse(self, response: Response):
         for data in filter(
             lambda x: x.get("isCity") == True,
             json.loads(response.body),
         ):
-            yield AprilCityItem(
-                id=data["ID"],
-                name=data["name"],
-            ).model_dump()
+            # run new spider for each city
+            yield StartItem(
+                spider=self.to_name(),
+                params={
+                    "city_ids": [data["ID"]],
+                },
+            )

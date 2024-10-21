@@ -1,4 +1,5 @@
 import asyncio
+import logging
 
 from scrapy.spiderloader import SpiderLoader
 from scrapy.utils import project, reactor
@@ -12,6 +13,9 @@ from app import settings
 from app.core.items import StartItem
 
 reactor.asyncioreactor.install()
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class Crawler:
@@ -34,7 +38,12 @@ class Crawler:
 
     async def crawl(self, start: StartItem):
         async with self.semaphore:
-            await deferred_to_future(self.runner.crawl(start.spider))
+            await deferred_to_future(
+                self.runner.crawl(
+                    start.spider,
+                    **start.model_dump(exclude=["spider"]),
+                )
+            )
 
     async def _make_starts(self):
         start_spiders = (
@@ -60,12 +69,13 @@ c = Crawler(
 async def handle(item: StartItem, msg: RabbitMessage):
     # TODO: add logger
     try:
+        logger.info(f"Start crawling: {item.model_dump()}")
         await c.crawl(item)
         await msg.ack()
-        print("Crawled", item.spider)
+        logger.info(f"Crawled: {item.spider}")
     except Exception as e:
         await msg.nack()
-        print("Error crawling", item.spider, e)
+        logger.info(f"Error crawling: {item.spider}, {e}")
         # TODO: add rejection
 
 
@@ -77,6 +87,9 @@ if __name__ == "__main__":
         asyncio.run(c._make_starts())
     else:
         from twisted.internet import reactor as twisted_reactor
+        from twisted.python import log
+
+        log.startLogging(sys.stdout)
 
         twisted_reactor.callWhenRunning(lambda: asyncio.ensure_future(c.app.run()))
         twisted_reactor.run()
