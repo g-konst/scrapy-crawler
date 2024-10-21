@@ -3,9 +3,9 @@ from faststream.rabbit import RabbitBroker, RabbitQueue
 
 from app.core.items import BaseItem, StartItem
 from app.core.spiders import BaseSpider
+from app import settings
 
-
-broker = RabbitBroker()
+broker = RabbitBroker(url=settings.RABBITMQ_URL)
 
 
 __all__ = ["AMQPPipeline"]
