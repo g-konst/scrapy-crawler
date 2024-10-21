@@ -66,6 +66,7 @@ async def handle(item: StartItem, msg: RabbitMessage):
     except Exception as e:
         await msg.nack()
         print("Error crawling", item.spider, e)
+        # TODO: add rejection
 
 
 if __name__ == "__main__":
