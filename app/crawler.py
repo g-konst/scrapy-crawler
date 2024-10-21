@@ -16,11 +16,9 @@ reactor.asyncioreactor.install()
 
 class Crawler:
     def __init__(self, broker_url: str, proc: int = 1):
-        self._broker = RabbitBroker(
-            url=broker_url,
-        )
+        self._broker = RabbitBroker(url=broker_url)
         self._app = FastStream(broker=self.broker)
-        self.semaphore = asyncio.Semaphore(proc)
+        self._semaphore = asyncio.Semaphore(proc)
 
         self.settings = project.get_project_settings()
         self.loader = SpiderLoader.from_settings(self.settings)
@@ -36,10 +34,7 @@ class Crawler:
 
     async def crawl(self, start: StartItem):
         async with self.semaphore:
-            spider = self.loader.load(start.spider)
-            # TODO: investigate - no requests processed
-            await deferred_to_future(self.runner.crawl(spider))
-            print("Done crawling", start.spider)
+            await deferred_to_future(self.runner.crawl(start.spider))
 
     async def _make_starts(self):
         start_spiders = (
@@ -57,18 +52,19 @@ class Crawler:
 
 c = Crawler(
     broker_url=settings.RABBITMQ_URL,
-    proc=20,
+    proc=1,  # TODO: move to settings
 )
 
 
 @c.broker.subscriber(settings.CRAWLER_START_QUEUE)
 async def handle(item: StartItem, msg: RabbitMessage):
+    # TODO: add logger
     try:
         await c.crawl(item)
         await msg.ack()
+        print("Crawled", item.spider)
     except Exception as e:
         await msg.nack()
-        # TODO: add logger
         print("Error crawling", item.spider, e)
 
 
@@ -79,4 +75,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         asyncio.run(c._make_starts())
     else:
-        asyncio.run(c.app.run())
+        from twisted.internet import reactor as twisted_reactor
+
+        twisted_reactor.callWhenRunning(lambda: asyncio.ensure_future(c.app.run()))
+        twisted_reactor.run()
