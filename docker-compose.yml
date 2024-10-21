@@ -17,7 +17,7 @@ services:
   crawler:
     <<: *app
     entrypoint: |
-      faststream run app.crawler:c.app
+      python -m app.crawler
 
   rmq:
     image: rabbitmq:management-alpine
