@@ -18,7 +18,7 @@ class Crawler:
     def __init__(self, broker_url: str, proc: int = 1):
         self._broker = RabbitBroker(url=broker_url)
         self._app = FastStream(broker=self.broker)
-        self._semaphore = asyncio.Semaphore(proc)
+        self.semaphore = asyncio.Semaphore(proc)
 
         self.settings = project.get_project_settings()
         self.loader = SpiderLoader.from_settings(self.settings)
