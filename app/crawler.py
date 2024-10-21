@@ -2,12 +2,8 @@ import asyncio
 
 from scrapy.spiderloader import SpiderLoader
 from scrapy.utils import project, reactor
-from scrapy.crawler import CrawlerRunner, CrawlerProcess
+from scrapy.crawler import CrawlerRunner
 from scrapy.utils.defer import deferred_to_future
-
-# from twisted.internet import reactor as twisted_reactor
-from twisted.internet.main import installReactor
-from twisted.internet.asyncioreactor import AsyncioSelectorReactor
 
 from faststream import FastStream
 from faststream.rabbit import RabbitBroker, RabbitMessage, RabbitQueue
@@ -28,8 +24,6 @@ class Crawler:
 
         self.settings = project.get_project_settings()
         self.loader = SpiderLoader.from_settings(self.settings)
-
-        self.process = CrawlerProcess(self.settings)
         self.runner = CrawlerRunner(self.settings)
 
     @property
@@ -69,7 +63,13 @@ c = Crawler(
 
 @c.broker.subscriber(settings.CRAWLER_START_QUEUE)
 async def handle(item: StartItem, msg: RabbitMessage):
-    await c.crawl(item)
+    try:
+        await c.crawl(item)
+        await msg.ack()
+    except Exception as e:
+        await msg.nack()
+        # TODO: add logger
+        print("Error crawling", item.spider, e)
 
 
 if __name__ == "__main__":
