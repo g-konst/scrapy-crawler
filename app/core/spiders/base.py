@@ -23,6 +23,10 @@ class SpiderNameMixin:
     def spidernamehead(self):
         return self._spidermodule()
 
+    @classmethod
+    def to_name(cls, suffix=""):
+        return "_".join(filter(bool, [cls._spidermodule(), suffix]))
+
 
 class MetaSpider(type):
     _suffix = None

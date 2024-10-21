@@ -14,10 +14,13 @@ services:
     entrypoint: |
       faststream run app.consumer:app
 
-  crawler:
-    <<: *app
-    entrypoint: |
-      python -m app.crawler
+  # TODO: investigate:
+  # - AMQPPipeline not connected in crawler service
+  # - httpx received block/error when parsing
+  # crawler:
+  #   <<: *app
+  #   entrypoint: |
+  #     python -m app.crawler
 
   rmq:
     image: rabbitmq:management-alpine
