@@ -34,8 +34,8 @@ class AprilSpider(AprilMixin, BaseSpider):
                 meta={"city_id": city_id},
             )
 
-    def parse(self, response: Response):
-        expected = len(json.loads(response.body))
+    async def parse(self, response: Response):
+        expected = len(json.loads(self.response_to_text(response)))
         city_id = response.meta["city_id"]
         self.logger.info(f"Expected: {expected}")
         if expected > 0:
@@ -50,8 +50,8 @@ class AprilSpider(AprilMixin, BaseSpider):
                     meta={"city_id": city_id},
                 )
 
-    def parse_items(self, response: Response):
-        data = json.loads(response.body)
+    async def parse_items(self, response: Response):
+        data = json.loads(self.response_to_text(response))
         city_id = response.meta["city_id"]
         for item_data in data:
             properties = self.get_props(item_data.get("properties", []))
@@ -77,12 +77,14 @@ class AprilSpider(AprilMixin, BaseSpider):
 
 class AprilCitiesSpider(AprilMixin, BaseSpider):
     _suffix = "cities"
-    start_urls = ["https://web-api.apteka-april.ru/gis/cities?hasPharmacies=true"]
+    start_urls = [
+        "https://web-api.apteka-april.ru/gis/cities?hasPharmacies=true"
+    ]
 
-    def parse(self, response: Response):
+    async def parse(self, response: Response):
         for data in filter(
             lambda x: x.get("isCity") == True,
-            json.loads(response.body),
+            json.loads(self.response_to_text(response)),
         ):
             # run new spider for each city
             yield StartItem(

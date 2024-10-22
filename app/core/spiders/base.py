@@ -33,14 +33,20 @@ class MetaSpider(type):
 
     def __init__(cls, clsname, superclasses, attributedict):
         if not attributedict["__module__"].startswith("app.core.spiders"):
-            cls.name = "_".join(filter(bool, (cls._spidermodule(), cls._suffix)))
+            cls.name = "_".join(
+                filter(bool, (cls._spidermodule(), cls._suffix))
+            )
 
 
 class BaseSpider(SpiderNameMixin, Spider, metaclass=MetaSpider):
     _table_name = None
 
     def __init__(
-        self, url: Optional[str] = None, params: Optional[dict] = None, *args, **kwargs
+        self,
+        url: Optional[str] = None,
+        params: Optional[dict] = None,
+        *args,
+        **kwargs,
     ) -> None:
         self.url = url
         if url:
@@ -54,6 +60,9 @@ class BaseSpider(SpiderNameMixin, Spider, metaclass=MetaSpider):
         self, request: Request, response: Response
     ) -> tuple[bool, str]:
         return True, None
+
+    async def make_request(self, request: Request) -> Request:
+        return request
 
 
 class MetaCombineSpider(MetaSpider, ABCMeta): ...

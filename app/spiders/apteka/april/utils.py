@@ -4,7 +4,6 @@ from scrapy.http import Request, Response
 
 
 class AprilMixin:
-    httpx = True
     custom_settings = {
         "RETRY_TIMES": 5,
         "DOWNLOAD_TIMEOUT": 30,
@@ -22,9 +21,17 @@ class AprilMixin:
         self, request: Request, response: Response
     ) -> tuple[bool, str]:
         try:
-            data = json.loads(response.body)
+            data = json.loads(self.response_to_text(response))
             return bool(data), "empty data"
         except json.JSONDecodeError:
             return False, "json decode error"
         except Exception as e:
             return False, str(e)
+
+    def response_to_text(self, response: Response) -> str:
+        return "".join(response.xpath("//text()").getall())
+
+    # Request interceptor
+    async def make_request(self, request: Request):
+        request.meta["playwright"] = True
+        return request

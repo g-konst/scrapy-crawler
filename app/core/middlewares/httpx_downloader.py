@@ -27,11 +27,10 @@ class HttpxDownloaderMiddleware:
         self, request: ScrapyRequest, spider: BaseSpider
     ):
         if getattr(spider, "httpx", None) or request.meta.get("httpx") == True:
-            async with httpx.AsyncClient(
-                proxy=request.meta["proxy"]
-            ) as client:
+            proxy = request.meta.get("proxy")
+            async with httpx.AsyncClient(proxy=proxy) as client:
                 spider.logger.info(
-                    f"Fetching {request.url} using httpx and proxy {request.meta['proxy']}"
+                    f"Fetching {request.url} using httpx and proxy {proxy}"
                 )
                 response = await client.send(
                     request=self._to_httpx_request(request)

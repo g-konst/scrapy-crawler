@@ -9,9 +9,11 @@ __all__ = ["ProxyMiddleware"]
 class ProxyMiddleware:
     async def get_proxy(self):
         # TODO: add proxy service
-        return "http://127.0.0.1:1080"
+        return None
 
     async def process_request(self, request: Request, spider: BaseSpider):
+        request = await spider.make_request(request)
+
         if request.meta.pop("renew_proxy", False):
             spider.logger.info("Renew proxy")
             request.meta["proxy"] = await self.get_proxy()
