@@ -93,13 +93,27 @@ You can also pass additional parameters in JSON format for use in your spider:
 $ scrapy crawl <spider-name> -a params='{"some": "data"}'
 ```
 
-## Using httpx with Scrapy
+### Run all crawlers
+
+After launch all services with `docker-compose` you can run all crawlers by running `app.crawler` module from python:
+
+```shell
+$ python -m app.crawler
+```
+
+This will generate `StartItems` for all spiders
+
+### Using httpx with Scrapy
 
 Scrapy doesn't support TLSv1.3 by default. If you need this feature, you can use the `httpx` downloader. To do so, pass `"httpx": True` in the `Request` meta:
 
 ```python
 Request(url, meta={"httpx": True})
 ```
+
+### Using playwright
+
+Project also include `scrapy-playwright` ([doc](https://github.com/scrapy-plugins/scrapy-playwright))
 
 ## TODO
 
