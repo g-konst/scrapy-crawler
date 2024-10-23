@@ -98,7 +98,7 @@ $ scrapy crawl <spider-name> -a params='{"some": "data"}'
 After launch all services with `docker-compose` you can run all crawlers by running `app.crawler` module from python:
 
 ```shell
-$ python -m app.crawler
+$ python -m app.crawler .
 ```
 
 This will generate `StartItems` for all spiders
